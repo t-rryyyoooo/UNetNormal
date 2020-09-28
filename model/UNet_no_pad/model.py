@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from utils import cropping3D
+from .utils import cropping3D
 from torchsummary import summary
 
 class DoubleConvolution(nn.Module):
@@ -75,7 +75,7 @@ class CreateUpConvBlock(nn.Module):
         return x
 
 class UNetModel(nn.Module):
-    def __init__(self, in_channel, nclasses, use_bn=True, use_dropout=True):
+    def __init__(self, in_channel, nclasses, dropout=0.5, use_bn=True, use_dropout=True):
         super(UNetModel, self).__init__()
         self.use_dropout = use_dropout
 
@@ -96,7 +96,7 @@ class UNetModel(nn.Module):
         self.contracts = nn.ModuleList(self.contracts)
 
         if use_dropout:
-            self.dropout = nn.Dropout(0.5)
+            self.dropout = nn.Dropout(dropout)
 
         expand = CreateUpConvBlock(512, 256, 256, 256, n=2, use_bn=use_bn)
         self.expands.append(expand)

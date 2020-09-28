@@ -20,6 +20,7 @@ def parseArgs():
     parser.add_argument("--num_class", help="The number of classes.", type=int, default=14)
     parser.add_argument("--lr", help="Default 0.001", type=float, default=0.001)
     parser.add_argument("--batch_size", help="Default 6", type=int, default=6)
+    parser.add_argument("--dropout", help="Default 6", type=float, default=0.5)
     parser.add_argument("--num_workers", help="Default 6.", type=int, default=6)
     parser.add_argument("--epoch", help="Default 50.", type=int, default=50)
     parser.add_argument("--gpu_ids", help="Default 0.", type=int, default=0, nargs="*")
@@ -53,6 +54,7 @@ def main(args):
             num_class = args.num_class,
             learning_rate = args.lr,
             batch_size = args.batch_size,
+            dropout = args.dropout,
             num_workers = args.num_workers, 
             checkpoint = checkpoint(args.model_savepath)
             )
@@ -83,12 +85,6 @@ def main(args):
             )
  
     trainer.fit(system)
-
-    # Make modeleweight read-only
-    if not args.overwrite:
-        for f in Path(args.model_savepath).glob("*.pkl"):
-            print(f)
-            os.chmod(f, 0o444)
 
 
 if __name__ == "__main__":
