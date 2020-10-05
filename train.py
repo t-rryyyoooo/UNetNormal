@@ -41,8 +41,8 @@ def main(args):
             "val" : args.val_list
             }
 
-    system_path = "." + args.module_name + ".system"
-    checkpoint_path = "." + args.module_name + ".modelCheckpoint"
+    system_path = ".." + args.module_name + ".system"
+    checkpoint_path = ".." + args.module_name + ".modelCheckpoint"
     system_module = import_module(system_path, "model")
     checkpoint_module = import_module(checkpoint_path, "model")
     UNetSystem = getattr(system_module, args.system_name)
