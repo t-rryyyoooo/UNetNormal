@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 import json
 import argparse
 from pathlib import Path
+import sys
 
 def parseArgs():
     parser = argparse.ArgumentParser()
@@ -29,7 +30,6 @@ def parseArgs():
     parser.add_argument("--project_name", help="Project name log is saved.")
     parser.add_argument("--experiment_name", help="Experiment name.", default="3DU-Net")
 
-    parser.add_argument("--overwrite", action="store_true")
 
     args = parser.parse_args()
 
@@ -41,6 +41,7 @@ def main(args):
             "val" : args.val_list
             }
 
+    sys.path.append("..")
     system_path = "." + args.module_name + ".system"
     checkpoint_path = "." + args.module_name + ".modelCheckpoint"
     system_module = import_module(system_path, "model")
