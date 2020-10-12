@@ -5,6 +5,12 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from decimal import Decimal, ROUND_HALF_UP
 
+def setWindowSize(image_array, min_value=-110, max_value=250):
+    image_array = np.where(image_array < min_value, min_value, image_array)
+    image_array = np.where(image_array > max_value, max_value, image_array)
+    
+    return image_array
+
 def rounding(number, digit):
     """
     This function rounds number at digit.
