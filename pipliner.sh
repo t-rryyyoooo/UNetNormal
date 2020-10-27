@@ -59,7 +59,7 @@ readonly MASK_NAME=$(cat ${JSON_FILE} | jq -r ".mask_name")
 readonly SAVE_NAME=$(cat ${JSON_FILE} | jq -r ".save_name")
 
 # Caluculation input
-readonly CSV_SAVEPATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".csv_savepath"))
+readonly CSV_SAVEDIR=$(eval echo $(cat ${JSON_FILE} | jq -r ".csv_savedir"))
 readonly CLASS_LABEL=$(cat ${JSON_FILE} | jq -r ".class_label")
 readonly TRUE_NAME=$(cat ${JSON_FILE} | jq -r ".true_name")
 readonly PREDICT_NAME=$(cat ${JSON_FILE} | jq -r ".predict_name")
@@ -76,11 +76,17 @@ do
  echo $key
  TRAIN_LIST=$(echo $TRAIN_LISTS | jq -r ".$key")
  VAL_LIST=$(echo $VAL_LISTS | jq -r ".$key")
+ TEST_LIST=$(echo $TEST_LISTS | jq -r ".$key")
+ test_list=(${TEST_LIST// / })
  model_savepath="${MODEL_SAVEPATH}/${key}"
  log="${LOG}/${key}"
  experiment_name="${EXPERIMENT_NAME}_${key}"
- if $RUN_TRAINING;then
 
+ run_training_fold=$(echo $RUN_TRAINING | jq -r ".$key")
+ run_segmentation_fold=$(echo $RUN_SEGMENTATION | jq -r ".$key")
+ run_caluculation_fold=$(echo $RUN_CALUCULATION | jq -r ".$key")
+
+ if ${run_training_fold};then
   echo "---------- Training ----------"
   echo "Dataset_path:${dataset_path}"
   echo "MODEL_SAVEPATH:${model_savepath}"
@@ -102,23 +108,20 @@ do
   echo "PROJECT_NAME:${PROJECT_NAME}"
   echo "EXPERIMENT_NAME:${experiment_name}"
 
-   python3 train.py ${dataset_path} ${model_savepath} ${MODULE_NAME} ${SYSTEM_NAME} ${CHECKPOINT_NAME} --train_list ${TRAIN_LIST} --val_list ${VAL_LIST} --log ${log} --in_channel ${IN_CHANNEL} --num_class ${NUM_CLASS} --lr ${LEARNING_RATE} --batch_size ${BATCH_SIZE} --num_workers ${NUM_WORKERS} --epoch ${EPOCH} --gpu_ids ${GPU_IDS} --api_key ${API_KEY} --project_name ${PROJECT_NAME} --experiment_name ${experiment_name} --dropout ${DROPOUT}
+   #python3 train.py ${dataset_path} ${model_savepath} ${MODULE_NAME} ${SYSTEM_NAME} ${CHECKPOINT_NAME} --train_list ${TRAIN_LIST} --val_list ${VAL_LIST} --log ${log} --in_channel ${IN_CHANNEL} --num_class ${NUM_CLASS} --lr ${LEARNING_RATE} --batch_size ${BATCH_SIZE} --num_workers ${NUM_WORKERS} --epoch ${EPOCH} --gpu_ids ${GPU_IDS} --api_key ${API_KEY} --project_name ${PROJECT_NAME} --experiment_name ${experiment_name} --dropout ${DROPOUT}
+
+   if [ $? -ne 0 ];then
+    exit 1
+   fi
 
  else
   echo "---------- No training ----------"
-
  fi
 
-
- if [ $? -ne 0 ];then
-  exit 1
- fi
-
- TEST_LIST=$(echo $TEST_LISTS | jq -r ".$key")
- test_list=(${TEST_LIST// / })
-
- if $RUN_SEGMENTATION;then
-  model="${model_savepath}/${MODEL_NAME}"
+ model="${model_savepath}/${MODEL_NAME}"
+ model_name=${model%.*}
+ csv_name=${model_name////_}
+ if ${run_segmentation_fold};then
   echo "---------- Segmentation ----------"
   echo ${test_list[@]}
   for number in ${test_list[@]}
@@ -137,15 +140,15 @@ do
 
    if [ $MASK_NAME = "No" ];then
     echo "Mask:${MASK_NAME}"
-    python3 segmentation.py $image $model $save --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap $OVERLAP -g ${GPU_IDS}
+    mask=""
 
    else
-    mask="${DATA_DIRECTORY}/case_${number}/${MASK_NAME}"
-    echo "Mask:${mask}"
-
-    python3 segmentation.py $image $model $save --mask_path $mask --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap $OVERLAP -g ${GPU_IDS}
-
+    mask_path="${DATA_DIRECTORY}/case_${number}/${MASK_NAME}"
+    mask="--mask_path ${mask_path}"
+    echo "Mask:${mask_path}"
    fi
+
+    #python3 segmentation.py $image $model $save --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap $OVERLAP -g ${GPU_IDS} ${mask}
 
    if [ $? -ne 0 ];then
     exit 1
@@ -158,34 +161,30 @@ do
 
  fi
 
- all_patients="${all_patients}${TEST_LIST} "
+ if ${run_caluculation_fold};then
+  all_patients="${all_patients}${TEST_LIST} "
+ fi
 done
 
-if $RUN_CALUCULATION;then
- echo "---------- Caluculation ----------"
- echo "TRUE_DIRECTORY:${DATA_DIRECTORY}"
- echo "PREDICT_DIRECTORY:${save_directory}"
- echo "CSV_SAVEPATH:${CSV_SAVEPATH}"
- echo "All_patients:${all_patients[@]}"
- echo "NUM_CLASS:${NUM_CLASS}"
- echo "CLASS_LABEL:${CLASS_LABEL}"
- echo "TRUE_NAME:${TRUE_NAME}"
- echo "PREDICT_NAME:${PREDICT_NAME}"
+echo "---------- Caluculation ----------"
+echo "TRUE_DIRECTORY:${DATA_DIRECTORY}"
+echo "PREDICT_DIRECTORY:${save_directory}"
+echo "CSV_SAVEPATH:${CSV_SAVEPATH}"
+echo "All_patients:${all_patients[@]}"
+echo "NUM_CLASS:${NUM_CLASS}"
+echo "CLASS_LABEL:${CLASS_LABEL}"
+echo "TRUE_NAME:${TRUE_NAME}"
+echo "PREDICT_NAME:${PREDICT_NAME}"
 
 
- python3 caluculateDICE.py ${DATA_DIRECTORY} ${save_directory} ${CSV_SAVEPATH} ${all_patients} --classes ${NUM_CLASS} --class_label ${CLASS_LABEL} --true_name ${TRUE_NAME} --predict_name ${PREDICT_NAME} 
+#python3 caluculateDICE.py ${DATA_DIRECTORY} ${save_directory} ${CSV_SAVEPATH} ${all_patients} --classes ${NUM_CLASS} --class_label ${CLASS_LABEL} --true_name ${TRUE_NAME} --predict_name ${PREDICT_NAME} 
 
- if [ $? -ne 0 ];then
-  exit 1
- fi
-
-else
- echo "---------- No caluculation ----------"
-
+if [ $? -ne 0 ];then
+ exit 1
 fi
 
 echo "---------- Logging ----------"
-python3 logger.py ${JSON_FILE}
+#python3 logger.py ${JSON_FILE}
 echo Done.
 
 
