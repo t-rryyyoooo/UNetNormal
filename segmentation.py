@@ -87,14 +87,14 @@ def main(args):
             segmented_array_list.append(mask_array)
             continue
 
-#image_array = image_array.transpose(2, 0, 1)
+        #image_array = image_array.transpose(2, 0, 1)
         image_array = torch.from_numpy(image_array[np.newaxis, np.newaxis, ...]).to(device, dtype=torch.float)
 
         segmented_array = model(image_array)
         segmented_array = segmented_array.to("cpu").detach().numpy().astype(np.float)
         segmented_array = np.squeeze(segmented_array)
         segmented_array = np.argmax(segmented_array, axis=0).astype(np.uint8)
-#segmented_array = segmented_array.transpose(1, 2, 0)
+        #segmented_array = segmented_array.transpose(1, 2, 0)
 
         segmented_array_list.append(segmented_array)
 
