@@ -15,7 +15,8 @@
         "fold3" : true
     },
 
-	"dataset_path" : "/sandisk/data/patch/Abdomen/no_pad/132-132-116-1/original/mask/mha",
+	"dataset_mask_path" : "/sandisk/data/patch/Abdomen/no_pad/132-132-116-1/original/mask/mha",
+	"dataset_nonmask_path" : "/sandisk/data/patch/Abdomen/no_pad/132-132-116-1/original/mask/mha",
 	"model_savepath" : "/sandisk/data/modelweight/Abdomen/no_pad/132-132-116-1/original/mask",
 	"train_lists" : {
         "fold1" : "10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29",
@@ -47,6 +48,8 @@
 	"api_key" : "IowbTppLPOohqhcDtzxw76Cot",
 	"project_name" : "abdomen",
 	"experiment_name" : "no_pad-132-132-116-1-original",
+    "train_mask_nonmask_rate" : "1.0 0.1",
+    "val_mask_nonmask_rate" : "1.0 1.0",
 
 
   "data_directory" : "/mnt/data/Abdomen",

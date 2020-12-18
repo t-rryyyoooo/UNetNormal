@@ -1,9 +1,9 @@
 import SimpleITK as sitk
 import numpy as np
 import argparse
-from functions import createParentPath, getImageWithMeta
+from functions import createParentPath, getImageWithMeta, getSizeFromString
 from pathlib import Path
-from extractor import extractor as extor
+from extractor import Extractor
 from tqdm import tqdm
 import torch
 import cloudpickle
@@ -43,36 +43,19 @@ def main(args):
     label.SetSpacing(image.GetSpacing())
 
     """ Get the patch size from string."""
-    matchobj = re.match("([0-9]+)-([0-9]+)-([0-9]+)", args.image_patch_size)
-    if matchobj is None:
-        print("[ERROR] Invalid patch size : {}.".fotmat(args.image_patch_size))
-        sys.exit()
-
-    image_patch_size = [int(s) for s in matchobj.groups()]
-    """ Get the patch size from string."""
-    matchobj = re.match("([0-9]+)-([0-9]+)-([0-9]+)", args.label_patch_size)
-    if matchobj is None:
-        print("[ERROR] Invalid patch size : {}.".fotmat(args.label_patch_size))
-        sys.exit()
-
-    label_patch_size = [int(s) for s in matchobj.groups()]
-
+    image_patch_size = getSizeFromString(args.image_patch_size)
+    label_patch_size = getSizeFromString(args.label_patch_size)
     
-    extractor = extor(
+    extractor = Extractor(
             image = image, 
             label = label, 
             mask = mask,
             image_patch_size = image_patch_size, 
             label_patch_size = label_patch_size, 
             overlap = args.overlap, 
-            phase = "segmentation"
             )
 
-    extractor.execute()
-    image_array_list, mask_array_list  = extractor.output("Array")
-
     """ Load model. """
-
     with open(args.modelweightfile, 'rb') as f:
         model = cloudpickle.load(f)
         model = torch.nn.DataParallel(model, device_ids=args.gpuid)
@@ -80,13 +63,8 @@ def main(args):
     model.eval()
 
     """ Segmentation module. """
-
     segmented_array_list = []
-    for image_array, mask_array in tqdm(zip(image_array_list, mask_array_list), desc="Segmenting images...", ncols=60):
-        if args.mask_path is not None and (mask_array == 0).all():
-            segmented_array_list.append(mask_array)
-            continue
-
+    for image_array, _ in tqdm(extractor.loadData(), desc="Segmenting images...", ncols=60):
         #image_array = image_array.transpose(2, 0, 1)
         image_array = torch.from_numpy(image_array[np.newaxis, np.newaxis, ...]).to(device, dtype=torch.float)
 

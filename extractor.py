@@ -8,7 +8,7 @@ from itertools import product
 from functions import padding, cropping, clipping, caluculatePaddingSize, getImageWithMeta, createParentPath
 import re
 
-class extractor():
+class Extractor():
     """
     Class which Clips the input image and label to patch size.
     In 13 organs segmentation, unlike kidney cancer segmentation,
@@ -54,33 +54,29 @@ class extractor():
             self.mask = padding(self.mask, self.lower_pad_size[1].tolist(), self.upper_pad_size[1].tolist())
 
         """ Clip the image and label to patch size. """
-        image_patch_list = self.makePatch(self.image, self.image_patch_size, self.slide)
-        label_patch_list = self.makePatch(self.label, self.label_patch_size, self.slide)
+        self.image_patch_list = self.makePatch(self.image, self.image_patch_size, self.slide)
+        self.label_patch_list = self.makePatch(self.label, self.label_patch_size, self.slide)
         if self.mask is not None:
             mask_patch_list = self.makePatch(self.mask, self.label_patch_size, self.slide)
 
-        assert len(image_patch_list) == len(label_patch_list)
+        assert len(self.image_patch_list) == len(self.label_patch_list)
         if self.mask is not None:
-            assert len(image_patch_list) == len(mask_patch_list)
+            assert len(self.image_patch_list) == len(mask_patch_list)
 
         """ Check mask. """
-        self.image_patch_list = [] 
-        self.image_patch_array_list = []
-        self.label_patch_list = []
-        self.label_patch_array_list = []
-        for i in range(len(image_patch_list)):
+        self.masked_indices = []
+        self.nonmasked_indices = []
+        for i in range(len(self.image_patch_list)):
             if self.mask is not None:
                 mask_patch_array = sitk.GetArrayFromImage(mask_patch_list[i])
                 if (mask_patch_array == 0).all():
-                    continue
+                    self.nonmasked_indices.append(i)
+                
+                else:
+                    self.masked_indices.append(i)
 
-            image_patch_array = sitk.GetArrayFromImage(image_patch_list[i])
-            label_patch_array = sitk.GetArrayFromImage(label_patch_list[i])
-            self.image_patch_list.append(image_patch_list[i])
-            self.label_patch_list.append(label_patch_list[i])
-            self.image_patch_array_list.append(image_patch_array)
-            self.label_patch_array_list.append(label_patch_array)
-
+            else:
+                self.masked_indices.append(i)
 
 
     def makePatch(self, image, patch_size, slide):
@@ -100,33 +96,29 @@ class extractor():
 
         return patch_list
 
+    def loadData(self, nonmask=False):
+        if not nonmask:
+            for i in self.masked_indices:
+                yield self.image_patch_list[i], self.label_patch_list[i]
 
-    def output(self, kind = "Array"):
-        if kind == "Array":
-            return self.image_patch_array_list, self.label_patch_array_list
-        elif kind == "Image":
-            return self.image_patch_list, self.label_patch_list
-        else:
-            print("[ERROR] Invalid kind : {}.".format(kind))
-            sys.exit()
+        if nonmask:
+            for i in self.nonmasked_indices:
+                yield self.image_patch_list[i], self.label_patch_list[i]
 
-    def save(self, save_path):
+    def save(self, save_path, nonmask=False):
         save_path = Path(save_path)
         save_image_path = save_path / "dummy.mha"
 
         if not save_image_path.parent.exists():
             createParentPath(str(save_image_path))
 
-        with tqdm(total=len(self.image_patch_list), desc="Saving image and label...", ncols=60) as pbar:
-            for i, (image, label) in enumerate(zip(self.image_patch_list, self.label_patch_list)):
-                save_image_path = save_path / "image_{:04d}.mha".format(i)
-                save_label_path = save_path / "label_{:04d}.mha".format(i)
+        for i, (image, label) in tqdm(enumerate(self.loadData(nonmask=nonmask))):
+            save_image_path = save_path / "image_{:04d}.mha".format(i)
+            save_label_path = save_path / "label_{:04d}.mha".format(i)
 
-                sitk.WriteImage(image, str(save_image_path), True)
-                sitk.WriteImage(label, str(save_label_path), True)
-                pbar.update(1)
-
-
+            sitk.WriteImage(image, str(save_image_path), True)
+            sitk.WriteImage(label, str(save_label_path), True)
+            pbar.update(1)
 
     def restore(self, predict_array_list):
         predict_array = np.zeros_like(sitk.GetArrayFromImage(self.label))

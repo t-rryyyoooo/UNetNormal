@@ -25,15 +25,14 @@ readonly RUN_SEGMENTATION=$(cat ${JSON_FILE} | jq -r ".run_segmentation")
 readonly RUN_CALUCULATION=$(cat ${JSON_FILE} | jq -r ".run_caluculation")
 
 # Training input
-readonly DATASET_PATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".dataset_path"))
-dataset_path="${DATASET_PATH}/image"
-save_directory="${DATASET_PATH}/segmentation"
+readonly DATASET_MASK_PATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".dataset_mask_path"))
+readonly DATASET_NONMASK_PATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".dataset_nonmask_path"))
+dataset_mask_path="${DATASET_MASK_PATH}/image"
+dataset_nonmask_path="${DATASET_NONMASK_PATH}/image"
+save_directory="${DATASET_MASK_PATH}/segmentation"
 
 readonly MODEL_SAVEPATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".model_savepath"))
 
-readonly MODULE_NAME=$(cat ${JSON_FILE} | jq -r ".module_name")
-readonly SYSTEM_NAME=$(cat ${JSON_FILE} | jq -r ".system_name")
-readonly CHECKPOINT_NAME=$(cat ${JSON_FILE} | jq -r ".checkpoint_name")
 readonly LOG=$(eval echo $(cat ${JSON_FILE} | jq -r ".log"))
 readonly IN_CHANNEL=$(cat ${JSON_FILE} | jq -r ".in_channel")
 readonly NUM_CLASS=$(cat ${JSON_FILE} | jq -r ".num_class")
@@ -46,6 +45,8 @@ readonly GPU_IDS=$(cat ${JSON_FILE} | jq -r ".gpu_ids")
 readonly API_KEY=$(cat ${JSON_FILE} | jq -r ".api_key")
 readonly PROJECT_NAME=$(cat ${JSON_FILE} | jq -r ".project_name")
 readonly EXPERIMENT_NAME=$(cat ${JSON_FILE} | jq -r ".experiment_name")
+readonly TRAIN_MASK_NONMASK_RATE=$(cat ${JSON_FILE} | jq -r ".train_mask_nonmask_rate")
+readonly VAL_MASK_NONMASK_RATE=$(cat ${JSON_FILE} | jq -r ".val_mask_nonmask_rate")
 
 # Segmentation input
 readonly DATA_DIRECTORY=$(eval echo $(cat ${JSON_FILE} | jq -r ".data_directory"))
@@ -88,13 +89,13 @@ do
 
  if ${run_training_fold};then
   echo "---------- Training ----------"
-  echo "Dataset_path:${dataset_path}"
+  echo "dataset_mask_path:${dataset_mask_path}"
+  echo "dataset_nonmask_path:${dataset_nonmask_path}"
   echo "MODEL_SAVEPATH:${model_savepath}"
   echo "TRAIN_LIST:${TRAIN_LIST}"
   echo "VAL_LIST:${VAL_LIST}"
-  echo "MODULE_NAME:${MODULE_NAME}"
-  echo "SYSTEM_NAME:${SYSTEM_NAME}"
-  echo "CHECKPOINT_NAME:${CHECKPOINT_NAME}"
+  echo "TRAIN_MASK_NONMASK_RATE:${TRAIN_MASK_NONMASK_RATE}"
+  echo "VAL_MASK_NONMASK_RATE:${VAL_MASK_NONMASK_RATE}"
   echo "LOG:${log}"
   echo "IN_CHANNEL:${IN_CHANNEL}"
   echo "NUM_CLASS:${NUM_CLASS}"
@@ -108,7 +109,7 @@ do
   echo "PROJECT_NAME:${PROJECT_NAME}"
   echo "EXPERIMENT_NAME:${experiment_name}"
 
-   #python3 train.py ${dataset_path} ${model_savepath} ${MODULE_NAME} ${SYSTEM_NAME} ${CHECKPOINT_NAME} --train_list ${TRAIN_LIST} --val_list ${VAL_LIST} --log ${log} --in_channel ${IN_CHANNEL} --num_class ${NUM_CLASS} --lr ${LEARNING_RATE} --batch_size ${BATCH_SIZE} --num_workers ${NUM_WORKERS} --epoch ${EPOCH} --gpu_ids ${GPU_IDS} --api_key ${API_KEY} --project_name ${PROJECT_NAME} --experiment_name ${experiment_name} --dropout ${DROPOUT}
+   #python3 train.py ${dataset_mask_path} ${dataset_nonmask_path} ${model_savepath} --train_list ${TRAIN_LIST} --val_list ${VAL_LIST} --train_mask_nonmask_rate ${TRAIN_MASK_NONMASK_RATE} --val_mask_nonmask_rate $VAL_MASK_NONMASK_RATE} --log ${log} --in_channel ${IN_CHANNEL} --num_class ${NUM_CLASS} --lr ${LEARNING_RATE} --batch_size ${BATCH_SIZE} --num_workers ${NUM_WORKERS} --epoch ${EPOCH} --gpu_ids ${GPU_IDS} --api_key ${API_KEY} --project_name ${PROJECT_NAME} --experiment_name ${experiment_name} --dropout ${DROPOUT}
 
    if [ $? -ne 0 ];then
     exit 1

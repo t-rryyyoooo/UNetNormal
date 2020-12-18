@@ -5,17 +5,22 @@ import json
 import argparse
 from pathlib import Path
 import sys
+sys.path.append("..")
+from model.UNet_no_pad_with_nonmask.system import UNetSystem
+from model.UNet_no_pad_with_nonmask.modelCheckpoint import BestAndLatestModelCheckpoint as checkpoint
+import time
+
 
 def parseArgs():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("dataset_path", help="/home/vmlab/Desktop/data/patch/Abdomen/28-44-44/image")
+    parser.add_argument("dataset_mask_path", help="/home/vmlab/Desktop/data/patch/Abdomen/28-44-44/image")
+    parser.add_argument("dataset_nonmask_path", help="/home/vmlab/Desktop/data/patch/Abdomen/28-44-44/image")
     parser.add_argument("model_savepath", help="/home/vmlab/Desktop/data/modelweight/Abdomen/28-44-44/mask")
-    parser.add_argument("module_name", help="Model directory name under model/.")
-    parser.add_argument("system_name", help="The class name in system.py")
-    parser.add_argument("checkpoint_name", help="Checkpoint class name.")
     parser.add_argument("--train_list", help="00 01", nargs="*", default= "00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19")
     parser.add_argument("--val_list", help="20 21", nargs="*", default="20 21 22 23 24 25 26 27 28 29")
+    parser.add_argument("--train_mask_nonmask_rate", nargs=2, default=[1.0 0.1])
+    parser.add_argument("--val_mask_nonmask_rate", nargs=2, default=[1.0 1.0])
     parser.add_argument("--log", help="/home/vmlab/Desktop/data/log/Abdomen/28-44-44/mask", default="log")
     parser.add_argument("--in_channel", help="Input channlel", type=int, default=1)
     parser.add_argument("--num_class", help="The number of classes.", type=int, default=14)
@@ -36,21 +41,23 @@ def parseArgs():
     return args
 
 def main(args):
+    start = time.time()
+
     criteria = {
             "train" : args.train_list, 
             "val" : args.val_list
             }
 
-    sys.path.append("..")
-    system_path = "." + args.module_name + ".system"
-    checkpoint_path = "." + args.module_name + ".modelCheckpoint"
-    system_module = import_module(system_path, "model")
-    checkpoint_module = import_module(checkpoint_path, "model")
-    UNetSystem = getattr(system_module, args.system_name)
-    checkpoint = getattr(checkpoint_module, args.checkpoint_name)
+    rate = {
+            "train" : {"mask" : args.train_mask_nonmask_rate[0], "nonmask" : args.train_mask_nonmask_rate[1]},
+            "val" : {"mask" : args.val_mask_nonmask_rate[1], "nonmask" : args.val_mask_nonmask_rate[1]}
+            }
+
     system = UNetSystem(
-            dataset_path = args.dataset_path,
+            dataset_mask_path = self.dataset_mask_path,
+            dataset_nonmask_path = self.dataset_nonmask_path,
             criteria = criteria,
+            rate = rate,
             in_channel = args.in_channel,
             num_class = args.num_class,
             learning_rate = args.lr,
@@ -74,7 +81,8 @@ def main(args):
                 max_epochs = args.epoch,
                 checkpoint_callback = None, 
                 logger = comet_logger,
-                gpus = args.gpu_ids
+                gpus = args.gpu_ids,
+                reload_dataloaders_every_epoch = True
             )
  
     else:
@@ -82,10 +90,15 @@ def main(args):
                 num_sanity_val_steps = 0, 
                 max_epochs = args.epoch,
                 checkpoint_callback = None, 
-                gpus = args.gpu_ids
+                gpus = args.gpu_ids,
+                reload_dataloaders_every_epoch = True
             )
  
     trainer.fit(system)
+
+    end = time.time()
+    message = "Training done. Time: {}.".format(end - start)
+    sendToLineNotify(message)
 
 
 if __name__ == "__main__":
