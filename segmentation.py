@@ -8,6 +8,8 @@ from tqdm import tqdm
 import torch
 import cloudpickle
 import re
+import sys
+sys.path.append("..")
 
 
 def ParseArgs():
@@ -55,6 +57,8 @@ def main(args):
             overlap = args.overlap, 
             )
 
+    extractor.execute()
+
     """ Load model. """
     with open(args.modelweightfile, 'rb') as f:
         model = cloudpickle.load(f)
@@ -64,8 +68,9 @@ def main(args):
 
     """ Segmentation module. """
     segmented_array_list = []
-    for image_array, _ in tqdm(extractor.loadData(), desc="Segmenting images...", ncols=60):
+    for image, _ in tqdm(extractor.loadData(), desc="Segmenting images...", ncols=60):
         #image_array = image_array.transpose(2, 0, 1)
+        image_array = sitk.GetArrayFromImage(image)
         image_array = torch.from_numpy(image_array[np.newaxis, np.newaxis, ...]).to(device, dtype=torch.float)
 
         segmented_array = model(image_array)

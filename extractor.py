@@ -118,13 +118,12 @@ class Extractor():
 
             sitk.WriteImage(image, str(save_image_path), True)
             sitk.WriteImage(label, str(save_label_path), True)
-            pbar.update(1)
 
     def restore(self, predict_array_list):
         predict_array = np.zeros_like(sitk.GetArrayFromImage(self.label))
 
         size = np.array(self.label.GetSize()) - self.label_patch_size 
-        indices = [i for i in product(range(0, size[0] + 1, slide[0]), range(0, size[1] +  1, slide[1]), range(0, size[2] + 1, slide[2]))]
+        indices = [i for i in product(range(0, size[0] + 1, self.slide[0]), range(0, size[1] +  1, self.slide[1]), range(0, size[2] + 1, self.slide[2]))]
 
         with tqdm(total=len(predict_array_list), desc="Restoring image...", ncols=60) as pbar:
             for pre_array, idx in zip(predict_array_list, indices): 

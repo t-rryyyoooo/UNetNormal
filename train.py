@@ -9,7 +9,7 @@ sys.path.append("..")
 from model.UNet_no_pad_with_nonmask.system import UNetSystem
 from model.UNet_no_pad_with_nonmask.modelCheckpoint import BestAndLatestModelCheckpoint as checkpoint
 import time
-
+from functions import sendToLineNotify
 
 def parseArgs():
     parser = argparse.ArgumentParser()
@@ -19,8 +19,8 @@ def parseArgs():
     parser.add_argument("model_savepath", help="/home/vmlab/Desktop/data/modelweight/Abdomen/28-44-44/mask")
     parser.add_argument("--train_list", help="00 01", nargs="*", default= "00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19")
     parser.add_argument("--val_list", help="20 21", nargs="*", default="20 21 22 23 24 25 26 27 28 29")
-    parser.add_argument("--train_mask_nonmask_rate", nargs=2, default=[1.0 0.1])
-    parser.add_argument("--val_mask_nonmask_rate", nargs=2, default=[1.0 1.0])
+    parser.add_argument("--train_mask_nonmask_rate", nargs=2, default=[1.0, 0.1], type=float)
+    parser.add_argument("--val_mask_nonmask_rate", nargs=2, default=[1.0, 1.0], type=float)
     parser.add_argument("--log", help="/home/vmlab/Desktop/data/log/Abdomen/28-44-44/mask", default="log")
     parser.add_argument("--in_channel", help="Input channlel", type=int, default=1)
     parser.add_argument("--num_class", help="The number of classes.", type=int, default=14)
@@ -54,8 +54,8 @@ def main(args):
             }
 
     system = UNetSystem(
-            dataset_mask_path = self.dataset_mask_path,
-            dataset_nonmask_path = self.dataset_nonmask_path,
+            dataset_mask_path = args.dataset_mask_path,
+            dataset_nonmask_path = args.dataset_nonmask_path,
             criteria = criteria,
             rate = rate,
             in_channel = args.in_channel,

@@ -8,3 +8,5 @@ test/
 input/
 log/
 log.txt
+secret.py
+

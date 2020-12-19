@@ -29,7 +29,7 @@ readonly DATASET_MASK_PATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".dataset_mask
 readonly DATASET_NONMASK_PATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".dataset_nonmask_path"))
 dataset_mask_path="${DATASET_MASK_PATH}/image"
 dataset_nonmask_path="${DATASET_NONMASK_PATH}/image"
-save_directory="${DATASET_MASK_PATH}/segmentation"
+save_directory="${DATASET_MASK_PATH}_nonmask/segmentation"
 
 readonly MODEL_SAVEPATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".model_savepath"))
 
@@ -109,7 +109,7 @@ do
   echo "PROJECT_NAME:${PROJECT_NAME}"
   echo "EXPERIMENT_NAME:${experiment_name}"
 
-   #python3 train.py ${dataset_mask_path} ${dataset_nonmask_path} ${model_savepath} --train_list ${TRAIN_LIST} --val_list ${VAL_LIST} --train_mask_nonmask_rate ${TRAIN_MASK_NONMASK_RATE} --val_mask_nonmask_rate $VAL_MASK_NONMASK_RATE} --log ${log} --in_channel ${IN_CHANNEL} --num_class ${NUM_CLASS} --lr ${LEARNING_RATE} --batch_size ${BATCH_SIZE} --num_workers ${NUM_WORKERS} --epoch ${EPOCH} --gpu_ids ${GPU_IDS} --api_key ${API_KEY} --project_name ${PROJECT_NAME} --experiment_name ${experiment_name} --dropout ${DROPOUT}
+   python3 train.py ${dataset_mask_path} ${dataset_nonmask_path} ${model_savepath} --train_list ${TRAIN_LIST} --val_list ${VAL_LIST} --train_mask_nonmask_rate ${TRAIN_MASK_NONMASK_RATE} --val_mask_nonmask_rate ${VAL_MASK_NONMASK_RATE} --log ${log} --in_channel ${IN_CHANNEL} --num_class ${NUM_CLASS} --lr ${LEARNING_RATE} --batch_size ${BATCH_SIZE} --num_workers ${NUM_WORKERS} --epoch ${EPOCH} --gpu_ids ${GPU_IDS} --api_key ${API_KEY} --project_name ${PROJECT_NAME} --experiment_name ${experiment_name} --dropout ${DROPOUT}
 
    if [ $? -ne 0 ];then
     exit 1
@@ -149,7 +149,7 @@ do
     echo "Mask:${mask_path}"
    fi
 
-    #python3 segmentation.py $image $model $save --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap $OVERLAP -g ${GPU_IDS} ${mask}
+    python3 segmentation.py $image $model $save --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap $OVERLAP -g ${GPU_IDS} ${mask}
 
    if [ $? -ne 0 ];then
     exit 1
@@ -178,14 +178,14 @@ echo "TRUE_NAME:${TRUE_NAME}"
 echo "PREDICT_NAME:${PREDICT_NAME}"
 
 
-#python3 caluculateDICE.py ${DATA_DIRECTORY} ${save_directory} ${CSV_SAVEPATH} ${all_patients} --classes ${NUM_CLASS} --class_label ${CLASS_LABEL} --true_name ${TRUE_NAME} --predict_name ${PREDICT_NAME} 
+python3 caluculateDICE.py ${DATA_DIRECTORY} ${save_directory} ${CSV_SAVEPATH} ${all_patients} --classes ${NUM_CLASS} --class_label ${CLASS_LABEL} --true_name ${TRUE_NAME} --predict_name ${PREDICT_NAME} 
 
 if [ $? -ne 0 ];then
  exit 1
 fi
 
 echo "---------- Logging ----------"
-#python3 logger.py ${JSON_FILE}
+python3 logger.py ${JSON_FILE}
 echo Done.
 
 
