@@ -45,26 +45,39 @@ do
  data="${DATA_DIRECTORY}/case_${number}"
  image="${data}/${IMAGE_NAME}"
  label="${data}/${LABEL_NAME}"
- mask="${data}/${MASK_NAME}"
- save="${SAVE_DIRECTORY}/case_${number}"
+ save="${SAVE_DIRECTORY}"
 
  echo "Image:${image}"
  echo "Label:${label}"
- echo "Mask:${mask}"
- echo "Save:${save}"
  echo "IMAGE_PATCH_SIZE:${IMAGE_PATCH_SIZE}"
  echo "LABEL_PATCH_SIZE:${LABEL_PATCH_SIZE}"
  echo "NONMASK:${NONMASK}"
 
- if $NONMASK ;then
-  nonmask="--nonmask"
- 
- else
-  nonmask=""
+ if [ $MASK_NAME = "No" ];then
+  echo "Mask:${MASK_NAME}"
+  is_mask=""
 
+ else
+  mask="${data}/${MASK_NAME}"
+  is_mask="--mask_path ${mask}"
+
+  echo "Mask:${mask}"
+
+  if $NONMASK ;then
+   nonmask="--nonmask"
+   save="${save}/nonmask"
+  
+  else
+   nonmask=""
+   save="${save}/mask"
+
+  fi
  fi
 
- python3 extractImage.py ${image} ${label} ${save} --mask_path ${mask} --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap ${OVERLAP} ${nonmask}
+ save="${save}/image/case_${number}"
+ echo "Save:${save}"
+
+ python3 extractImage.py ${image} ${label} ${save} ${is_mask} --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap ${OVERLAP} ${nonmask}
 
  # Judge if it works.
  if [ $? -eq 0 ]; then
