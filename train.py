@@ -50,7 +50,7 @@ def main(args):
 
     rate = {
             "train" : {"mask" : args.train_mask_nonmask_rate[0], "nonmask" : args.train_mask_nonmask_rate[1]},
-            "val" : {"mask" : args.val_mask_nonmask_rate[1], "nonmask" : args.val_mask_nonmask_rate[1]}
+            "val" : {"mask" : args.val_mask_nonmask_rate[0], "nonmask" : args.val_mask_nonmask_rate[1]}
             }
 
     system = UNetSystem(

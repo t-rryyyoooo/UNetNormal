@@ -64,8 +64,20 @@ do
   nonmask="--with_nonmask"
  
  else
-  nonmask=""
+  mask="${data}/${MASK_NAME}"
+  is_mask="--mask_path ${mask}"
 
+  echo "Mask:${mask}"
+
+  if $NONMASK ;then
+   nonmask="--nonmask"
+   save="${save}/nonmask"
+  
+  else
+   nonmask=""
+   save="${save}/mask"
+
+  fi
  fi
 
  python3 extractImage.py ${image} ${label} ${save} ${number} --mask_path ${mask} --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap ${OVERLAP} --num_class ${NUM_CLASS} --class_axis ${CLASS_AXIS} ${nonmask}

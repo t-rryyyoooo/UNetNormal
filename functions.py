@@ -24,7 +24,7 @@ def sendToLineNotify(message):
     if res.status_code == 200:
         print("Suceeded in sending to Line Notify")
     else:
-        pritn("Failed to send")
+        print("Failed to send")
 
 
 def setWindowSize(image_array, min_value=-110, max_value=250):
