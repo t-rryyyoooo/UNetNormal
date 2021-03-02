@@ -138,8 +138,6 @@ class Extractor():
 
         predict = getImageWithMeta(predict_array, self.label)
         predict = cropping(predict, self.lower_pad_size[1].tolist(), self.upper_pad_size[1].tolist())
-        predict.SetOrigin(self.label.GetOrigin())
-        
 
         return predict
 
