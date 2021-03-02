@@ -1,12 +1,17 @@
 import sys
+sys.path.append("..")
 import re
 import SimpleITK as sitk
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 from itertools import product
-from functions import padding, cropping, clipping, caluculatePaddingSize, getImageWithMeta, createParentPath
-import re
+from utils.imageProcessing.clipping import clipping
+from utils.imageProcessing.cropping import cropping
+from utils.imageProcessing.padding import padding
+from utils.patchGenerator.scanPatchGenerator import ScanPatchGenerator
+from utils.patchGenerator.utils import calculatePaddingSize
+from utils.utils import getImageWithMeta, isMasked
 
 class Extractor():
     """
@@ -17,7 +22,7 @@ class Extractor():
     In this class we use simpleITK to clip mainly. Pay attention to the axis.
     
     """
-    def __init__(self, image, label, mask=None, image_patch_size=[48, 48, 16], label_patch_size=[48, 48, 16], overlap=1):
+    def __init__(self, image, label, mask=None, image_patch_size=[48, 48, 16], label_patch_size=[48, 48, 16], overlap=1, num_class=14, class_axis=0):
         """
         image : original CT image
         label : original label image
@@ -32,7 +37,12 @@ class Extractor():
         self.org = image
         self.image = image
         self.label = label
-        self.mask = mask
+        if mask is not None:
+            self.mask = mask
+
+        else:
+            self.mask = sitk.Image(image.GetSize(), sitk.sitkUInt8)
+            self.mask = self.mask.__add__(1)
 
         """ patch_size = [z, y, x] """
         self.image_patch_size = np.array(image_patch_size)
@@ -41,105 +51,146 @@ class Extractor():
         self.overlap = overlap
         self.slide = self.label_patch_size // overlap
 
-    def execute(self):
-        """ Clip image and label. """
+        self.makeGenerator()
 
-        """ Caluculate each padding size for label and image to clip correctly. """
-        self.lower_pad_size, self.upper_pad_size = caluculatePaddingSize(np.array(self.label.GetSize()), self.image_patch_size, self.label_patch_size, self.slide)
+        """ After implementing makeGenerator(), self.label is padded to clip correctly. """
+        self.num_class = num_class
+        self.class_axis = class_axis
+        self.predicted_array = np.ones([num_class] + list(self.label.GetSize())[::-1], dtype=np.float)
+        self.counter_array = np.ones(list(self.label.GetSize())[::-1], dtype=np.float)
 
-        """ Pad image and label. """
-        self.image = padding(self.image, self.lower_pad_size[0].tolist(), self.upper_pad_size[0].tolist(), mirroring=True)
-        self.label = padding(self.label, self.lower_pad_size[1].tolist(), self.upper_pad_size[1].tolist())
-        if self.mask is not None:
-            self.mask = padding(self.mask, self.lower_pad_size[1].tolist(), self.upper_pad_size[1].tolist())
+    def makeGenerator(self):
+        """ Calculate each padding size for label and image to clip correctly. """
+        self.lower_pad_size, self.upper_pad_size = calculatePaddingSize(
+                                                    np.array(self.label.GetSize()), 
+                                                    self.image_patch_size, self.label_patch_size, 
+                                                    self.slide
+                                                    )
 
-        """ Clip the image and label to patch size. """
-        self.image_patch_list = self.makePatch(self.image, self.image_patch_size, self.slide)
-        self.label_patch_list = self.makePatch(self.label, self.label_patch_size, self.slide)
-        if self.mask is not None:
-            mask_patch_list = self.makePatch(self.mask, self.label_patch_size, self.slide)
+        """ Pad image, label and mask. """
+        self.image = padding(
+                        self.image, 
+                        self.lower_pad_size[0].tolist(), 
+                        self.upper_pad_size[0].tolist(), 
+                        )
+        self.label = padding(
+                        self.label, 
+                        self.lower_pad_size[1].tolist(), 
+                        self.upper_pad_size[1].tolist()
+                        )
+        self.mask = padding(
+                        self.mask, 
+                        self.lower_pad_size[1].tolist(), 
+                        self.upper_pad_size[1].tolist()
+                        )
 
-        assert len(self.image_patch_list) == len(self.label_patch_list)
-        if self.mask is not None:
-            assert len(self.image_patch_list) == len(mask_patch_list)
+        self.image_patch_generator = ScanPatchGenerator(
+                                            self.image,
+                                            self.image_patch_size,
+                                            self.slide
+                                            )
+        
+        self.label_patch_generator = ScanPatchGenerator(
+                                            self.label,
+                                            self.label_patch_size,
+                                            self.slide
+                                            )
+        
+        self.mask_patch_generator = ScanPatchGenerator(
+                                            self.mask,
+                                            self.label_patch_size,
+                                            self.slide
+                                            )
 
-        """ Check mask. """
-        self.masked_indices = []
-        self.nonmasked_indices = []
-        for i in range(len(self.image_patch_list)):
-            if self.mask is not None:
-                mask_patch_array = sitk.GetArrayFromImage(mask_patch_list[i])
-                if (mask_patch_array == 0).all():
-                    self.nonmasked_indices.append(i)
-                
-                else:
-                    self.masked_indices.append(i)
+    def __len__(self):
+        return self.image_patch_generator.__len__()
 
-            else:
-                self.masked_indices.append(i)
+    def generateData(self):
+        """ [1] means patch array because PatchGenerator returns index and patch_array. """
+        for ipa, lpa, mpa in zip(self.image_patch_generator(), self.label_patch_generator(), self.mask_patch_generator()):
+            input_index = ipa[0]
+            output_index = lpa[0]
 
+            yield ipa[1], lpa[1], mpa[1], input_index, output_index
 
-    def makePatch(self, image, patch_size, slide):
-        size = np.array(image.GetSize()) - patch_size 
-        indices = [i for i in product(range(0, size[0] + 1, self.slide[0]), range(0, size[1] +  1, self.slide[1]), range(0, size[2] + 1, self.slide[2]))]
+    def save(self, save_path, patient_id, with_nonmask=False):
+        if not isinstance(patient_id, str):
+            patient_id = str(patient_id)
 
-        patch_list = []
-        with tqdm(total=len(indices), desc="Clipping images...", ncols=60) as pbar:
-            for index in indices:
-                lower_clip_size = np.array(index)
-                upper_clip_size = lower_clip_size + patch_size
-
-                patch = clipping(image, lower_clip_size, upper_clip_size)
-                patch_list.append(patch)
-
-                pbar.update(1)
-
-        return patch_list
-
-    def loadData(self, nonmask=False):
-        if not nonmask:
-            for i in self.masked_indices:
-                yield self.image_patch_list[i], self.label_patch_list[i]
-
-        if nonmask:
-            for i in self.nonmasked_indices:
-                yield self.image_patch_list[i], self.label_patch_list[i]
-
-    def save(self, save_path, nonmask=False):
         save_path = Path(save_path)
-        save_image_path = save_path / "dummy.mha"
+        save_mask_path = save_path / "mask" / "case_{}".format(patient_id.zfill(2))
+        save_mask_path.mkdir(parents=True, exist_ok=True)
 
-        if not save_image_path.parent.exists():
-            createParentPath(str(save_image_path))
+        if with_nonmask:
+            save_nonmask_path = save_path / "nonmask" / "case_{}".format(patient_id.zfill(2))
+            save_nonmask_path.mkdir(parents=True, exist_ok=True)
 
-        for i, (image, label) in tqdm(enumerate(self.loadData(nonmask=nonmask))):
-            save_image_path = save_path / "image_{:04d}.mha".format(i)
-            save_label_path = save_path / "label_{:04d}.mha".format(i)
+            desc = "Saving masked and nonmasked images and labels..."
 
-            sitk.WriteImage(image, str(save_image_path), True)
-            sitk.WriteImage(label, str(save_label_path), True)
+        else:
+            desc = "Saving masked images and labels..."
 
-    def restore(self, predict_array_list):
-        predict_array = np.zeros_like(sitk.GetArrayFromImage(self.label))
+        with tqdm(total=self.image_patch_generator.__len__(), ncols=100, desc=desc) as pbar:
+            for i, (ipa, lpa, mpa, _, _) in enumerate(self.generateData()):
+                if isMasked(mpa):
+                    save_masked_image_path = save_mask_path / "image_{:04d}.mha".format(i)
+                    save_masked_label_path = save_mask_path / "label_{:04d}.mha".format(i)
+                    sitk.WriteImage(ipa, str(save_masked_image_path), True)
+                    sitk.WriteImage(lpa, str(save_masked_label_path), True)
 
-        size = np.array(self.label.GetSize()) - self.label_patch_size 
-        indices = [i for i in product(range(0, size[0] + 1, self.slide[0]), range(0, size[1] +  1, self.slide[1]), range(0, size[2] + 1, self.slide[2]))]
+                else:
+                    if with_nonmask:
+                        save_nonmasked_image_path = save_nonmask_path / "image_{:04d}.mha".format(i)
+                        save_nonmasked_label_path = save_nonmask_path / "label_{:04d}.mha".format(i)
 
-        with tqdm(total=len(predict_array_list), desc="Restoring image...", ncols=60) as pbar:
-            for pre_array, idx in zip(predict_array_list, indices): 
-                x_slice = slice(idx[0], idx[0] + self.label_patch_size[0])
-                y_slice = slice(idx[1], idx[1] + self.label_patch_size[1])
-                z_slice = slice(idx[2], idx[2] + self.label_patch_size[2])
+                        sitk.WriteImage(ipa, str(save_nonmasked_image_path), True)
+                        sitk.WriteImage(lpa, str(save_nonmasked_label_path), True)
 
-
-                predict_array[z_slice, y_slice, x_slice] = pre_array
                 pbar.update(1)
 
+    def insertToPredictedArray(self, index, array):
+        """ Insert predicted array (before argmax array) which has probability per class. """
+        assert array.ndim == self.predicted_array.ndim
 
-        predict = getImageWithMeta(predict_array, self.label)
-        predict = cropping(predict, self.lower_pad_size[1].tolist(), self.upper_pad_size[1].tolist())
+        predicted_slices = []
+        s = slice(0, self.num_class)
+        predicted_slices.append(s)
+        counter_slices = []
+        label_patch_array_size = self.label_patch_size[::-1]
+        index = index[::-1]
+        for i in range(array.ndim - 1):
+            s = slice(index[i], index[i] + label_patch_array_size[i])
 
-        return predict
+            predicted_slices.append(s)
+            counter_slices.append(s)
+
+        predicted_slices = tuple(predicted_slices)
+        counter_slices = tuple(counter_slices)
+
+        """ Array's shape and counter's array shape are not same, which leads to shape error, so, address it. """
+        s = np.delete(np.arange(array.ndim), self.class_axis)
+        s = np.array(array.shape)[s]
+
+        self.predicted_array[predicted_slices] += array
+        self.counter_array[counter_slices] += np.ones(s)
+ 
+
+    def outputRestoredImage(self):
+        """ Usually, this method is used after all of predicted patch array is insert to self.predicted_array with insertToPredictedArray. """
+
+        """ Address division by zero. """
+        self.counter_array = np.where(self.counter_array == 0, 1, self.counter_array)
+
+        self.predicted_array /= self.counter_array
+        self.predicted_array = np.argmax(self.predicted_array, axis=self.class_axis)
+        predicted = getImageWithMeta(self.predicted_array, self.label)
+        predicted = cropping(
+                        predicted,
+                        self.lower_pad_size[1].tolist(),
+                        self.upper_pad_size[1].tolist()
+                        )
+
+        return predicted
 
 
 

@@ -36,7 +36,6 @@ for number in ${NUM_ARRAY[@]}
 do
  save="${SAVE_DIRECTORY}/case_${number}/${SAVE_NAME}"
  image="${DATA_DIRECTORY}/case_${number}/${IMAGE_NAME}"
- mask="${DATA_DIRECTORY}/case_${number}/${MASK_NAME}"
 
  echo "Image:${image}"
  echo "WEIGHT:${WEIGHT}"

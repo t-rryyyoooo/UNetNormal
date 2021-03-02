@@ -1,6 +1,6 @@
 {
-   "data_directory" : "$HOME/tanimoto/data/Abdomen",
-   "save_directory" : "$HOME/tanimoto/data/patch/Abdomen/no_pad/132-132-116-1/nonmask/image", 
+   "data_directory" : "/mnt/data/Abdomen",
+   "save_directory" : "/sandisk/data/patch/Abdomen/no_pad/132-132-116-1/nonmask/image", 
     "image_patch_size" : "132-132-116",
     "label_patch_size" : "44-44-28",
     "overlap" : 1,
