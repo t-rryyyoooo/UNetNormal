@@ -56,7 +56,7 @@ class Extractor():
         """ After implementing makeGenerator(), self.label is padded to clip correctly. """
         self.num_class = num_class
         self.class_axis = class_axis
-        self.predicted_array = np.zeros([num_class] + list(self.label.GetSize())[::-1], dtype=np.float)
+        self.predicted_array = np.ones([num_class] + list(self.label.GetSize())[::-1], dtype=np.float)
         self.counter_array = np.zeros(list(self.label.GetSize())[::-1], dtype=np.float)
 
     def makeGenerator(self):
@@ -171,7 +171,7 @@ class Extractor():
         s = np.delete(np.arange(array.ndim), self.class_axis)
         s = np.array(array.shape)[s]
 
-        self.predicted_array[predicted_slices] *= array
+        self.predicted_array[predicted_slices] += array
         self.counter_array[counter_slices] += np.ones(s)
  
 

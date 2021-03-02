@@ -49,9 +49,8 @@ def main(args):
             class_axis = args.class_axis
             )
 
-    extractor.save(args.save_path, args.patient_id, with_nonmask=args.with_nonmask)
+    #extractor.save(args.save_path, args.patient_id, with_nonmask=args.with_nonmask)
 
-    """
     # For testing iace.outputRestoredImage.
     from tqdm import tqdm
     with tqdm(total=extractor.__len__(), ncols=60, desc="Segmenting and restoring...") as pbar:
@@ -71,7 +70,6 @@ def main(args):
     from utils.indicator.DICE import DICE
     dice = DICE(la, pa)
     print(dice)
-    """
 
 if __name__ == '__main__':
     args = ParseArgs()
