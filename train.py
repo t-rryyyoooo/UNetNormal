@@ -9,7 +9,7 @@ sys.path.append("..")
 from model.UNet_no_pad_with_nonmask.system import UNetSystem
 from model.UNet_no_pad_with_nonmask.modelCheckpoint import BestAndLatestModelCheckpoint as checkpoint
 import time
-from functions import sendToLineNotify
+from utils.utils import sendToLineNotify
 
 def parseArgs():
     parser = argparse.ArgumentParser()
