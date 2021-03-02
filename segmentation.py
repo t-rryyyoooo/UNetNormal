@@ -51,8 +51,8 @@ def main(args):
                     image = image, 
                     label = label, 
                     mask = mask,
-                    image_array_patch_size = image_patch_size, 
-                    label_array_patch_size = label_patch_size, 
+                    image_patch_size = image_patch_size, 
+                    label_patch_size = label_patch_size, 
                     overlap = args.overlap, 
                     num_class = args.num_class,
                     class_axis = args.class_axis
@@ -70,7 +70,7 @@ def main(args):
     device = torch.device("cuda" if use_cuda else "cpu")
     segmenter = Segmenter(
                     model,
-                    num_input_array = 2,
+                    num_input_array = 1,
                     ndim = 5,
                     device = device
                     )
@@ -81,7 +81,7 @@ def main(args):
             mask_patch_array  = sitk.GetArrayFromImage(mask_patch)
 
             if isMasked(mask_patch_array):
-                input_array_list = [image_patch_array, coord_patch_array]
+                input_array_list = [image_patch_array]
                 segmented_array = segmenter.forward(input_array_list)
 
                 extractor.insertToPredictedArray(index, segmented_array)
@@ -91,7 +91,7 @@ def main(args):
     segmented = extractor.outputRestoredImage()
 
     save_path = Path(args.save_path)
-    save_path.parents.mkdir(parent=True, exist_ok=True)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
 
     print("Saving image to {}".format(str(save_path)))
     sitk.WriteImage(segmented, str(save_path), True)
