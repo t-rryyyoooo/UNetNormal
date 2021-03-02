@@ -57,7 +57,7 @@ class Extractor():
         self.num_class = num_class
         self.class_axis = class_axis
         self.predicted_array = np.ones([num_class] + list(self.label.GetSize())[::-1], dtype=np.float)
-        self.counter_array = np.zeros(list(self.label.GetSize())[::-1], dtype=np.float)
+        self.counter_array = np.ones(list(self.label.GetSize())[::-1], dtype=np.float)
 
     def makeGenerator(self):
         """ Calculate each padding size for label and image to clip correctly. """
