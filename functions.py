@@ -1,7 +1,6 @@
 import numpy as np
 import os
 import SimpleITK as sitk
-import tensorflow as tf
 import matplotlib.pyplot as plt
 from decimal import Decimal, ROUND_HALF_UP
 import requests
