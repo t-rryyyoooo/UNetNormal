@@ -1,14 +1,13 @@
 {
-    "data_directory" : "$HOME/Desktop/data/Abdomen",
-    "weight" : "$HOME/Desktop/data/modelweight/Abdomen/with_pad/28-44-44-1/mask/fold2/latest.pkl",
-    "save_directory" : "$HOME/Desktop/data/patch/Abdomen/with_pad/28-44-44-1/mask/segmentation", 
-    "image_patch_size" : "28-44-44",
+    "data_directory" : "$HOME/tanimoto/image_dir",
+    "weight" : "$HOME/tanimoto/data/modelweight/Abdomen/no_pad/132-132-116-1/mask_nonmask/fold3/latest.pkl",
+    "save_directory" : "$HOME/tanimoto/image_dir/predict", 
+    "image_patch_size" : "116-132-132",
     "label_patch_size" : "28-44-44",
     "overlap" : 1,
-    "image_name" : "imaging.nii.gz",
-    "mask_name" : "mask.mha",
+    "image_name" : "imaging_resampled.nii.gz",
     "save_name" : "label.mha",
-    "num_array" : ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19"],
+    "num_array" : ["30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49"],
     "log_file" : "fail/segmentation.txt",
     "gpu_id" : 0
 }
