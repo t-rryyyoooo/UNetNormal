@@ -31,7 +31,7 @@ dataset_mask_path="${DATASET_MASk_PATH}"
 dataset_nonmask_path="${DATASET_NONMASk_PATH}"
 save_directory="${DATASET_MASk_PATH}_nonmask/segmentation"
 
-readonly MODEL_SAVEPATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".model_savepath"))
+MODEL_SAVEPATH=$(eval echo $(cat ${JSON_FILE} | jq -r ".model_savepath"))
 
 readonly LOG=$(eval echo $(cat ${JSON_FILE} | jq -r ".log"))
 readonly IN_CHANNEL=$(cat ${JSON_FILE} | jq -r ".in_channel")
@@ -72,6 +72,10 @@ readonly TRAIN_LISTS=$(cat ${JSON_FILE} | jq -r ".train_lists")
 readonly VAL_LISTS=$(cat ${JSON_FILE} | jq -r ".val_lists")
 readonly TEST_LISTS=$(cat ${JSON_FILE} | jq -r ".test_lists")
 readonly KEYS=$(cat ${JSON_FILE} | jq -r ".train_lists | keys[]")
+
+num_fold=(${KEYS// / })
+num_fold=${#num_fold[@]}
+MODEL_SAVEPATH="${MODEL_SAVEPATH}/${num_fold}-fold"
 
 all_patients=""
 for key in ${KEYS[@]}
