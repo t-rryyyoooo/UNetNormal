@@ -50,7 +50,6 @@ do
 
  echo "Image:${image}"
  echo "Label:${label}"
- echo "Mask:${mask}"
  echo "Save:${save}"
  echo "PATIENT_ID:${number}"
  echo "IMAGE_PATCH_SIZE:${IMAGE_PATCH_SIZE}"
@@ -60,25 +59,25 @@ do
  echo "CLASS_AXIS:${CLASS_AXIS}"
  echo "WITH_NONMASK:${WITH_NONMASK}"
 
+ if [ $MASK_NAME = "No" ] ;then
+  echo "Mask:${MASK_NAMWE}"
+  mask=""
+
+ else
+  mask_path="${data}/${MASK_NAME}"
+  echo "Mask:${mask_path}"
+  mask="--mask_path ${mask_path}"
+
  if $WITH_NONMASK ;then
-  nonmask="--with_nonmask"
+  with_nonmask="--with_nonmask"
  
  else
-  mask="${data}/${MASK_NAME}"
-  is_mask="--mask_path ${mask}"
+  nonmask=""
 
-  echo "Mask:${mask}"
-
-  if $WITH_NONMASK ;then
-   nonmask="--with_nonmask"
-  
-  else
-   nonmask=""
-
-  fi
  fi
+fi
 
- python3 extractImage.py ${image} ${label} ${save} ${number} --mask_path ${mask} --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap ${OVERLAP} --num_class ${NUM_CLASS} --class_axis ${CLASS_AXIS} ${with_nonmask}
+ python3 extractImage.py ${image} ${label} ${save} ${number} --image_patch_size ${IMAGE_PATCH_SIZE} --label_patch_size ${LABEL_PATCH_SIZE} --overlap ${OVERLAP} --num_class ${NUM_CLASS} --class_axis ${CLASS_AXIS} ${with_nonmask} ${mask}
 
  # Judge if it works.
  if [ $? -eq 0 ]; then

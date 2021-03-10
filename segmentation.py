@@ -76,7 +76,7 @@ def main(args):
                     )
 
     with tqdm(total=extractor.__len__(), ncols=60, desc="Segmenting and restoring...") as pbar:
-        for image_patch, _, mask_patch, _, index in extractor.generateData():
+        for image_patch, lp, mask_patch, _, index in extractor.generateData():
             image_patch_array = sitk.GetArrayFromImage(image_patch)
             mask_patch_array  = sitk.GetArrayFromImage(mask_patch)
 
