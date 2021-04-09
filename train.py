@@ -9,7 +9,7 @@ sys.path.append("..")
 from model.UNet_no_pad_with_nonmask.system import UNetSystem
 from model.UNet_no_pad_with_nonmask.modelCheckpoint import BestAndLatestModelCheckpoint as checkpoint
 import time
-from utils.utils import sendToLineNotify
+from utils.utils import sendToLineNotify, setSeed
 
 def parseArgs():
     parser = argparse.ArgumentParser()
@@ -41,6 +41,7 @@ def parseArgs():
     return args
 
 def main(args):
+    setSeed()
     start = time.time()
 
     criteria = {
