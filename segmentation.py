@@ -8,8 +8,9 @@ from tqdm import tqdm
 import torch
 import cloudpickle
 from extractor import Extractor
-from utils.machineLearning.segmentation import Segmenter
+from utils.machineLearning.predict import Predictor as Segmenter
 from utils.utils import getSizeFromString, isMasked
+from model.UNet_no_pad_with_nonmask.transform import UNetTransform
 
 
 def ParseArgs():
@@ -61,28 +62,24 @@ def main(args):
     """ Load model. """
     with open(args.modelweightfile, 'rb') as f:
         model = cloudpickle.load(f)
-        model = torch.nn.DataParallel(model, device_ids=args.gpuid)
-
+        # Use a single gpu because It does't work when we use multi gpu.
+        model = torch.nn.DataParallel(model, device_ids=[args.gpuid[0]])
     model.eval()
 
     """ Segmentation module. """
     use_cuda = torch.cuda.is_available() and True
     device = torch.device("cuda" if use_cuda else "cpu")
+    transformer = UNetTransform()
     segmenter = Segmenter(
                     model,
-                    num_input_array = 1,
-                    ndim = 5,
                     device = device
                     )
 
     with tqdm(total=extractor.__len__(), ncols=60, desc="Segmenting and restoring...") as pbar:
-        for image_patch, lp, mask_patch, _, index in extractor.generateData():
-            image_patch_array = sitk.GetArrayFromImage(image_patch)
-            mask_patch_array  = sitk.GetArrayFromImage(mask_patch)
-
+        for image_patch, _, mask_patch, _, index in extractor.generateData():
+            image_patch_array, mask_patch_array = transformer("test", image_patch, mask_patch)
             if isMasked(mask_patch_array):
-                input_array_list = [image_patch_array]
-                segmented_array = segmenter.forward(input_array_list)
+                segmented_array = segmenter(image_patch_array)
 
                 extractor.insertToPredictedArray(index, segmented_array)
 

@@ -1,67 +1,51 @@
 {
     "run_training" : {
-        "fold1" : true,
-        "fold2" : true,
-        "fold3" : true 
+        "fold1" : true
     },
     "run_segmentation" : {
-        "fold1" : true,
-        "fold2" : true,
-        "fold3" : true
+        "fold1" : true
         },
     "run_caluculation" : {
-        "fold1" : true,
-        "fold2" : true,
-        "fold3" : true
+        "fold1" : true
     },
 
-	"dataset_mask_path" : "/sandisk/data/patch/Abdomen/no_pad/132-132-116-1/mask",
-	"dataset_nonmask_path" : "/sandisk/data/patch/Abdomen/no_pad/132-132-116-1/nonmask",
-	"model_savepath" : "$HOME/tanimoto/data/modelweight/Abdomen/no_pad/132-132-116-1/mask_nonmask",
+	"dataset_mask_path" : "test/data/patch/tsukuba_data/no_pad/132-132-116-1/mask",
+	"dataset_nonmask_path" : "test/data/patch/tsukuba_data/no_pad/132-132-116-1/nonmask",
+	"log_path" : "test/data/modelweight/tsukuba_data/no_pad/132-132-116-1/mask_nonmask",
 	"train_lists" : {
-        "fold1" : "10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29",
-        "fold2" : "00 01 02 03 04 05 06 07 08 09 20 21 22 23 24 25 26 27 28 29",
-        "fold3" : "00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19"
+        "fold1" : "001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 017 018 019 020 021 022 023 024 025 026 028 029 030 031 032 033 034 035 036 037 038 039 040 041 044 045 046 047 051 053 055 057 058 060 061 062 063 064 065 066 067 068 069 071 072 073 074 075 076 077 078 079 082 083 086 088 090 093 094 095 096 097 098"
     },
     "val_lists" : {
-        "fold1" : "00 01",
-        "fold2" : "10 11",
-        "fold3" : "20 21"
+        "fold1" : "101 102 103 104 105 107 109 112 113 115 117 118 119 121 122 123 124 125 126 127"
     },
     "test_lists" : {
-        "fold1" : "00 01 02 03 04 05 06 07 08 09",
-        "fold2" : "10 11 12 13 14 15 16 17 18 19",
-        "fold3" : "20 21 22 23 24 25 26 27 28 29"
+        "fold1" : "130 134 135 136 138 140 142 145 146 147 149 150 151 152 154 157 159"
     },
-	"log" : "/sandisk/data/log/Abdomen/no_pad/132-132-116-1/mask_nonmask",
-	"in_channel" : 1, 
-	"num_class" : 14,
-	"learning_rate" : 0.001,
-	"batch_size" : 3,
-	"dropout": 0.5,
-	"num_workers" : 6,
-	"epoch" : 100,
-	"gpu_ids" : 0, 
-	"api_key" : "IowbTppLPOohqhcDtzxw76Cot",
-	"project_name" : "abdomen",
-	"experiment_name" : "no_pad-116-132-132-1-3-origin",
+    "in_channel" : 1, 
+    "num_class" : 4,
+    "learning_rate" : 0.001,
+    "batch_size" : 2,
+    "dropout": 0.5,
+    "num_workers" : 6,
+    "epoch" : 100,
+    "gpu_ids" : "0 1", 
     "train_mask_nonmask_rate" : "1.0 0.1",
     "val_mask_nonmask_rate" : "1.0 0.0",
 
 
-  "data_directory" : "/sandisk/data/Abdomen",
+  "data_directory" : "$HOME/Desktop/tsukuba_data",
   "model_name" : "latest.pkl",
-  "image_patch_size" : "132-132-116",
+  "image_patch_size" : "132-132-116-1",
   "label_patch_size" : "44-44-28",
   "overlap" : 1,
   "class_axis" : 0,
-  "image_name" : "imaging_resampled.nii.gz",
+  "image_name" : "SE2.nii.gz",
   "mask_name" : "No",
   "save_name" : "label.mha",
 
-  "ignore_classes" : "6", 
-  "csv_savedir" : "/sandisk/data/result/Abdomen/no_pad/132-132-116-1/mask_nonmask", 
-  "class_label" : "backGound spleen  rightKidney  leftKidney gallbladder esophagus liver stomach aorta inferiorVenaCava portalVeinAndSplenicVein pancreas rightAdrenalGland leftAdrenalGland",
-  "true_name" : "segmentation_resampled.nii.gz",
+  "ignore_classes" : "", 
+  "csv_savedir" : "test/data/result/tsukuba_data/no_pad/132-132-116-1-1/mask_nonmask", 
+  "class_label" : "BG Kidney 2 3",
+  "true_name" : "segmentation.nii.gz",
   "predict_name" : "label.mha" 
 }
