@@ -4,7 +4,6 @@ from pathlib import Path
 import sys
 sys.path.append("..")
 from pytorch_lightning.loggers import TensorBoardLogger
-from model.UNet_no_pad_with_nonmask.system import UNetSystem
 from utils.utils import setSeed
 
 def parseArgs():
@@ -17,6 +16,7 @@ def parseArgs():
     parser.add_argument("--val_list", help="20 21", nargs="*", default="20 21 22 23 24 25 26 27 28 29")
     parser.add_argument("--train_mask_nonmask_rate", nargs=2, default=[1.0, 0.1], type=float)
     parser.add_argument("--val_mask_nonmask_rate", nargs=2, default=[1.0, 1.0], type=float)
+    parser.add_argument("--model_type", help="[2dunet512/3dunet]", default="2dunet512")
     parser.add_argument("--in_channel", help="Input channlel", type=int, default=1)
     parser.add_argument("--num_class", help="The number of classes.", type=int, default=14)
     parser.add_argument("--lr", help="Default 0.001", type=float, default=0.001)
@@ -48,7 +48,14 @@ def main(args):
                 }
             }
 
-    system = UNetSystem(
+    if args.model_type not in ["2dunet512", "3dunet"]:
+        raise NotImplementedError("{} is not supported.".format(args.model_type))
+    elif args.model_type == "2dunet512":
+        from model.UNet_2d_with_nonmask.system import UNetSystem as System
+    else:
+        from model.UNet_no_pad_with_nonmask.system import UNetSystem as System
+
+    system = System(
                 dataset_mask_path    = args.dataset_mask_path,
                 dataset_nonmask_path = args.dataset_nonmask_path,
                 log_path             = args.log_path,
