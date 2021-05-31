@@ -4,7 +4,8 @@ import os
 import sys
 sys.path.append("..")
 import argparse
-from utils.indicator.DICE import DICE
+from utils.indicator import DICE
+from utils.utils import printArgs
 from pathlib import Path
 from tqdm import tqdm
 import pandas as pd
@@ -28,6 +29,8 @@ def parseArgs():
 
 
 def main(args):
+    printArgs(args)
+
     if args.class_label is not None:
         if len(args.class_label) != args.classes:
             print("[ERROR] You have to equate the length of class_label with the classes")

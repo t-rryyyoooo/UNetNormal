@@ -48,24 +48,11 @@ do
  mask="${data}/${MASK_NAME}"
  save="${SAVE_DIRECTORY}"
 
- echo "Image:${image}"
- echo "Label:${label}"
- echo "Save:${save}"
- echo "PATIENT_ID:${number}"
- echo "IMAGE_PATCH_SIZE:${IMAGE_PATCH_SIZE}"
- echo "LABEL_PATCH_SIZE:${LABEL_PATCH_SIZE}"
- echo "OVERLAP:${OVERLAP}"
- echo "NUM_CLASS:${NUM_CLASS}"
- echo "CLASS_AXIS:${CLASS_AXIS}"
- echo "WITH_NONMASK:${WITH_NONMASK}"
-
  if [ $MASK_NAME = "No" ] ;then
-  echo "Mask:${MASK_NAMWE}"
   mask=""
 
  else
   mask_path="${data}/${MASK_NAME}"
-  echo "Mask:${mask_path}"
   mask="--mask_path ${mask_path}"
 
  if $WITH_NONMASK ;then

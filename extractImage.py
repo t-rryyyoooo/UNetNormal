@@ -3,7 +3,7 @@ from pathlib import Path
 import SimpleITK as sitk
 import numpy as np
 from extractor import Extractor
-from utils.utils import getSizeFromString
+from utils.utils import getSizeFromString, printArgs
 
 args = None
 
@@ -26,6 +26,8 @@ def ParseArgs():
     return args
 
 def main(args):
+    printArgs(args)
+
     """ Read image and label. """
     label = sitk.ReadImage(args.label_path)
     image = sitk.ReadImage(args.image_path)

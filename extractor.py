@@ -56,7 +56,11 @@ class Extractor():
         """ After implementing makeGenerator(), self.label is padded to clip correctly. """
         self.num_class = num_class
         self.class_axis = class_axis
-        self.predicted_array = np.ones([num_class] + list(self.label.GetSize())[::-1], dtype=np.float)
+        if num_class == 1:
+            self.predicted_array = np.ones(list(self.label.GetSize())[::-1], dtype=np.float)
+        else:
+            self.predicted_array = np.ones([num_class] + list(self.label.GetSize())[::-1], dtype=np.float)
+
         self.counter_array = np.zeros(list(self.label.GetSize())[::-1], dtype=np.float)
 
     def makeGenerator(self):
@@ -153,16 +157,24 @@ class Extractor():
         assert array.ndim == self.predicted_array.ndim
 
         predicted_slices = []
-        s = slice(0, self.num_class)
-        predicted_slices.append(s)
+        if self.num_class != 1:
+            s = slice(0, self.num_class)
+            predicted_slices.append(s)
         counter_slices = []
         label_patch_array_size = self.label_patch_size[::-1]
         index = index[::-1]
-        for i in range(array.ndim - 1):
-            s = slice(index[i], index[i] + label_patch_array_size[i])
+        if self.num_class != 1:
+            for i in range(array.ndim - 1):
+                s = slice(index[i], index[i] + label_patch_array_size[i])
 
-            predicted_slices.append(s)
-            counter_slices.append(s)
+                predicted_slices.append(s)
+                counter_slices.append(s)
+        else:
+            for i in range(array.ndim):
+                s = slice(index[i], index[i] + label_patch_array_size[i])
+
+                predicted_slices.append(s)
+                counter_slices.append(s)
 
         predicted_slices = tuple(predicted_slices)
         counter_slices = tuple(counter_slices)
@@ -182,7 +194,11 @@ class Extractor():
         self.counter_array = np.where(self.counter_array == 0, 1, self.counter_array)
 
         self.predicted_array /= self.counter_array
-        self.predicted_array = np.argmax(self.predicted_array, axis=self.class_axis)
+        if self.num_class == 1:
+            self.predicted_array = (self.predicted_array > 0.5).astype(np.uint8)
+        else:
+            self.predicted_array = np.argmax(self.predicted_array, axis=self.class_axis)
+
         predicted = getImageWithMeta(self.predicted_array, self.label)
         predicted = cropping(
                         predicted,

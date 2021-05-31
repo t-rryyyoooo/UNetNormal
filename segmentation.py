@@ -8,7 +8,9 @@ from tqdm import tqdm
 import torch
 import pickle5
 from utils.machineLearning.predict import Predictor as Segmenter
-from utils.utils import getSizeFromStringElseNone, isMasked, sitkReadImageElseNone
+from utils.utils import getSizeFromStringElseNone, isMasked, sitkReadImageElseNone, printArgs
+from extractor import Extractor
+from model.UNet_no_pad_with_nonmask.transform import UNetTransform as transform
 
 
 def ParseArgs():
@@ -17,11 +19,7 @@ def ParseArgs():
     parser.add_argument("image_path", help="$HOME/Desktop/data/kits19/case_00000/imaging.nii.gz")
     parser.add_argument("modelweightfile", help="Trained model weights file (*.hdf5).")
     parser.add_argument("save_path", help="Segmented label file.(.mha)")
-    parser.add_argument("--model_type", help="[2dunet512/3dunet]")
     parser.add_argument("--mask_path", help="$HOME/Desktop/data/kits19/case_00000/mask.mha")
-    parser.add_argument("--image_patch_width", default=1, type=int)
-    parser.add_argument("--label_patch_width", default=1, type=int)
-    parser.add_argument("--plane_size")
     parser.add_argument("--image_patch_size", help="48-48-16", default="44-44-28")
     parser.add_argument("--label_patch_size", help="44-44-28", default="44-44-28")
     parser.add_argument("--overlap", help="1", default=1, type=int)
@@ -33,6 +31,7 @@ def ParseArgs():
     return args
 
 def main(args):
+    printArgs(args)
     """ Read images. """
     image = sitk.ReadImage(args.image_path)
     mask  = sitkReadImageElseNone(args.mask_path)
@@ -44,45 +43,21 @@ def main(args):
     label.SetSpacing(image.GetSpacing())
 
 
-    if args.model_type not in ["2dunet512", "3dunet"]:
-        raise NotImplementedError("{} is not supported.".format(args.model_type))
 
-    elif args.model_type == "3dunet":
-        from extractor import Extractor
-        from model.UNet_no_pad_with_nonmask.transform import UNetTransform as transform
+    """ Get the patch size from string."""
+    image_patch_size = getSizeFromStringElseNone(args.image_patch_size)
+    label_patch_size = getSizeFromStringElseNone(args.label_patch_size)
 
-        """ Get the patch size from string."""
-        image_patch_size = getSizeFromStringElseNone(args.image_patch_size)
-        label_patch_size = getSizeFromStringElseNone(args.label_patch_size)
-
-        patch_generator = Extractor(
-                            image            = image, 
-                            label            = label, 
-                            mask             = mask,
-                            image_patch_size = image_patch_size, 
-                            label_patch_size = label_patch_size, 
-                            overlap          = args.overlap, 
-                            num_class        = args.num_class,
-                            class_axis       = args.axis
-                        )
-
-    else:
-        from imageSlicer import ImageSlicer
-        from model.UNet_2d_with_nonmask.transform import UNetTransform as transform
-
-        plane_size = getSizeFromStringElseNone(args.plane_size, digit=2)
-        patch_generator = ImageSlicer(
-                            image              = image,
-                            target             = label,
-                            image_patch_width  = args.image_patch_width,
-                            target_patch_width = args.label_patch_width,
-                            plane_size         = plane_size,
-                            overlap            = args.overlap,
-                            axis               = args.axis,
-                            mask               = mask
-                            )
-
-                            
+    patch_generator = Extractor(
+                        image            = image, 
+                        label            = label, 
+                        mask             = mask,
+                        image_patch_size = image_patch_size, 
+                        label_patch_size = label_patch_size, 
+                        overlap          = args.overlap, 
+                        num_class        = args.num_class,
+                        class_axis       = args.axis
+                    )
 
     """ Load model. """
     with open(args.modelweightfile, 'rb') as f:
@@ -101,11 +76,11 @@ def main(args):
 
     transformer = transform()
     with tqdm(total=patch_generator.__len__(), ncols=60, desc="Segmenting and restoring...") as pbar:
-        for image_patch, _, mask_patch, index in patch_generator.generatePatchArray():
+        for image_patch, _, mask_patch, _, index in patch_generator.generateData():
             image_patch_array, mask_patch_array = transformer("test", image_patch, mask_patch)
             if isMasked(mask_patch_array):
                 segmented_array = segmenter(image_patch_array)
-                segmented_array = np.argmax(segmented_array, axis=0)
+                #segmented_array = np.argmax(segmented_array, axis=0)
 
                 patch_generator.insertToPredictedArray(index, segmented_array)
 
